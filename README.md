@@ -176,6 +176,159 @@ All API endpoints require either a valid JWT cookie (web login) or `Authorizatio
 └── tsconfig.json
 ```
 
+## Architecture: Project & Task Management with Discord
+
+Mission Control is designed to work with [OpenClaw](https://github.com/openclaw/openclaw) agents that use Discord as their chat surface. Each project gets its own Discord channel, its own isolated session context, and tasks are automatically dispatched to the right place.
+
+### The Big Picture
+
+```mermaid
+flowchart TB
+    subgraph MC["Mission Control (Web Dashboard)"]
+        TB[Task Board]
+        API[REST API]
+    end
+
+    subgraph Discord["Discord Server"]
+        CH1["#weather-bot"]
+        CH2["#blog-writer"]
+        CH3["#data-pipeline"]
+        CH4["#mission-control"]
+    end
+
+    subgraph Sessions["OpenClaw Sessions (isolated context)"]
+        S1["Session: weather-bot\n🌤 Knows weather APIs,\ncron schedules, alert rules"]
+        S2["Session: blog-writer\n✍️ Knows content plan,\ndrafts, publishing flow"]
+        S3["Session: data-pipeline\n🔧 Knows ETL scripts,\nDB schemas, error logs"]
+        SM["Main Session\n🧠 Heartbeat dispatcher"]
+    end
+
+    subgraph WS["Workspace Projects"]
+        P1["projects/weather-bot/\nREADME.md\n**Discord:** #weather-bot (123)"]
+        P2["projects/blog-writer/\nREADME.md\n**Discord:** #blog-writer (456)"]
+        P3["projects/data-pipeline/\nREADME.md\n**Discord:** #data-pipeline (789)"]
+    end
+
+    TB -->|"Active tasks"| SM
+    SM -->|"Read project→channel mapping"| WS
+    SM -->|"Dispatch task"| CH1
+    SM -->|"Dispatch task"| CH2
+    SM -->|"Dispatch task"| CH3
+    CH1 --- S1
+    CH2 --- S2
+    CH3 --- S3
+    S1 -->|"Update status → done"| API
+    S2 -->|"Update status → done"| API
+    S3 -->|"Update status → done"| API
+```
+
+### How It Works
+
+**1. Projects live in the workspace**
+
+Each project is a folder under `~/.openclaw/workspace/projects/`. The README contains a Discord channel mapping:
+
+```markdown
+# Weather Bot
+
+**Status:** 🟢 Active
+**Discord:** #weather-bot (1234567890)
+
+## Description
+Automated weather alerts and forecasts.
+```
+
+**2. Discord channels provide isolated context**
+
+Each Discord channel has its own OpenClaw session. When you chat in `#blog-writer`, the agent only has context about the blog project. This isolation means:
+- No cross-contamination between projects
+- The agent can focus on project-specific files, history, and decisions
+- `/new` resets the session but keeps the channel mapping
+
+**3. Tasks flow through a lifecycle**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Backlog: Create task
+    Backlog --> Active: Ready for agent
+    Active --> InProgress: Agent picks up
+    InProgress --> Done: Work complete
+    Done --> Active: Reopen with feedback
+    Done --> [*]: Accepted
+```
+
+| Status | Who owns it | What happens |
+|--------|------------|--------------|
+| **Backlog** | Human | Draft — still editing the task |
+| **Active** | System | Ready — dispatcher will send to the right channel |
+| **In Progress** | Agent | Agent is working on it |
+| **Done** | Human | Review — accept or reopen with comments |
+
+**4. The dispatcher connects everything**
+
+The main session runs a heartbeat check (~30 min):
+
+```mermaid
+sequenceDiagram
+    participant HB as Main Session (Heartbeat)
+    participant MC as Mission Control API
+    participant WS as Workspace Projects
+    participant DC as Discord Channel
+    participant S as Channel Session
+
+    HB->>MC: GET /api/tasks?status=active
+    MC-->>HB: [{id: 42, project: "weather-bot", ...}]
+    HB->>MC: GET /api/projects
+    MC-->>HB: [{name: "weather-bot", discord_channel_id: "123"}]
+    HB->>DC: Send task instruction to #weather-bot
+    HB->>MC: PATCH /api/tasks/42 {status: "in_progress"}
+    DC->>S: Session receives task message
+    S->>S: Works on the task
+    S->>MC: PATCH /api/tasks/42 {status: "done"}
+    S->>MC: POST /api/tasks/42/events {note: "Completed..."}
+```
+
+### Example Walkthrough
+
+Imagine you have three projects: `weather-bot`, `blog-writer`, and `data-pipeline`.
+
+1. **You create a task** in Mission Control:
+   - Title: "Add hourly forecast to weather alerts"
+   - Project: `weather-bot`
+   - Instruction: "Update the cron job to include hourly forecasts. Use the Open-Meteo API hourly endpoint..."
+
+2. **You move it to Active** when the instruction is complete.
+
+3. **Next heartbeat**, the main session:
+   - Finds the task (status: active, project: weather-bot)
+   - Looks up `weather-bot` → Discord channel `#weather-bot` (from README)
+   - Sends: "📋 **Task #42** | Priority: medium — Add hourly forecast to weather alerts — _(instruction)_"
+   - Updates status to In Progress
+
+4. **The `#weather-bot` session** receives the message, works on it with full project context (knows the cron setup, API keys, file structure), and when done calls the API to mark it complete.
+
+5. **You review** in Mission Control. If it's not right, you click Reopen, add a comment ("forecasts should be in Celsius, not Fahrenheit"), and it goes back to Active for another round.
+
+### Setting Up a New Project
+
+Use the `/project <name>` command in any Discord channel:
+
+```
+/project weather-bot
+```
+
+This creates:
+- `~/.openclaw/workspace/projects/weather-bot/README.md` with Discord channel mapping
+- The project immediately appears in Mission Control's dropdown
+- Tasks assigned to this project will dispatch to that channel
+
+### Key Design Decisions
+
+- **Channel ID, not session ID** — Mapping uses Discord channel IDs which persist across `/new` session resets
+- **README as config** — Project metadata lives in markdown, not a database. No system config in the app.
+- **Human-in-the-loop** — Tasks go Backlog → Active (human decides when it's ready) and Done → Reopen (human reviews results)
+- **API-first** — The agent updates task status via REST API. The dashboard is just a view layer.
+
 ## License
 
 MIT
