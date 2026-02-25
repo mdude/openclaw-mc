@@ -211,9 +211,9 @@ flowchart TB
 
     TB -->|"Active tasks"| SM
     SM -->|"Read project→channel mapping"| WS
-    SM -->|"Dispatch task"| CH1
-    SM -->|"Dispatch task"| CH2
-    SM -->|"Dispatch task"| CH3
+    SM -->|"sessions_send"| S1
+    SM -->|"sessions_send"| S2
+    SM -->|"sessions_send"| S3
     CH1 --- S1
     CH2 --- S2
     CH3 --- S3
@@ -266,27 +266,28 @@ stateDiagram-v2
 
 **4. The dispatcher connects everything**
 
-The main session runs a heartbeat check (~30 min):
+The main session runs a heartbeat check (~30 min). It uses `sessions_send` to dispatch tasks directly to the project's channel session — the same session that holds all the project's chat history and context.
 
 ```mermaid
 sequenceDiagram
     participant HB as Main Session (Heartbeat)
     participant MC as Mission Control API
     participant WS as Workspace Projects
-    participant DC as Discord Channel
-    participant S as Channel Session
+    participant S as Channel Session (#weather-bot)
 
     HB->>MC: GET /api/tasks?status=active
     MC-->>HB: [{id: 42, project: "weather-bot", ...}]
     HB->>MC: GET /api/projects
     MC-->>HB: [{name: "weather-bot", discord_channel_id: "123"}]
-    HB->>DC: Send task instruction to #weather-bot
     HB->>MC: PATCH /api/tasks/42 {status: "in_progress"}
-    DC->>S: Session receives task message
-    S->>S: Works on the task
+    HB->>S: sessions_send(sessionKey, task instruction)
+    Note over S: Works with full project context<br/>(chat history, files, decisions)
     S->>MC: PATCH /api/tasks/42 {status: "done"}
     S->>MC: POST /api/tasks/42/events {note: "Completed..."}
+    S-->>S: Results appear in #weather-bot
 ```
+
+> **Key:** `sessions_send` routes the task to `agent:main:discord:channel:<id>` — the actual channel session, not an isolated sub-agent. This requires `tools.sessions.visibility: "agent"` in the OpenClaw config.
 
 ### Example Walkthrough
 
@@ -302,10 +303,10 @@ Imagine you have three projects: `weather-bot`, `blog-writer`, and `data-pipelin
 3. **Next heartbeat**, the main session:
    - Finds the task (status: active, project: weather-bot)
    - Looks up `weather-bot` → Discord channel `#weather-bot` (from README)
-   - Sends: "📋 **Task #42** | Priority: medium — Add hourly forecast to weather alerts — _(instruction)_"
-   - Updates status to In Progress
+   - Marks task as In Progress
+   - Uses `sessions_send` to dispatch the task instruction to `agent:main:discord:channel:123` (the #weather-bot session)
 
-4. **The `#weather-bot` session** receives the message, works on it with full project context (knows the cron setup, API keys, file structure), and when done calls the API to mark it complete.
+4. **The `#weather-bot` session** receives the instruction with full project context (knows the cron setup, API keys, file structure, previous conversations), works on the task, and calls the API to mark it complete. Results appear directly in #weather-bot.
 
 5. **You review** in Mission Control. If it's not right, you click Reopen, add a comment ("forecasts should be in Celsius, not Fahrenheit"), and it goes back to Active for another round.
 
