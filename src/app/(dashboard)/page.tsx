@@ -103,7 +103,11 @@ export default function TasksPage() {
     load();
   }
 
-  const groupedByStatus = STATUS_COLS.map(s => ({ label: STATUS_LABELS[s], key: s, tasks: tasks.filter(t => t.status === s) }));
+  const groupedByStatus = STATUS_COLS.map(s => {
+    let filtered = tasks.filter(t => t.status === s);
+    if (s === 'done') filtered = [...filtered].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+    return { label: STATUS_LABELS[s], key: s, tasks: filtered };
+  });
   const projectNames = [...new Set(tasks.map(t => t.project || 'Unassigned'))].sort();
   const groupedByProject = projectNames.map(p => ({ label: p, key: p, tasks: tasks.filter(t => (t.project || 'Unassigned') === p) }));
   const groups = groupBy === 'status' ? groupedByStatus : groupedByProject;
