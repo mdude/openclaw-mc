@@ -36,7 +36,7 @@ export default function TasksPage() {
     fetch('/missioncontrol/api/tasks').then(r => {
       if (!r.ok) { window.location.href = '/missioncontrol/login'; return []; }
       return r.json();
-    }).then(d => Array.isArray(d) ? setTasks(d) : setTasks([]));
+    }).then(d => Array.isArray(d) ? setTasks(d.filter((t: Task) => t.status !== 'archived')) : setTasks([]));
   }, []);
 
   const loadProjects = useCallback(() => {
@@ -245,10 +245,16 @@ export default function TasksPage() {
                                 </div>
                               </div>
                             ) : (
-                              <button onClick={(e) => { e.stopPropagation(); setReopeningTask(t.id); setReopenComment(''); }}
-                                className="text-xs bg-orange-700 hover:bg-orange-600 px-2 py-1 rounded transition">
-                                🔄 Reopen
-                              </button>
+                              <>
+                                <button onClick={(e) => { e.stopPropagation(); setReopeningTask(t.id); setReopenComment(''); }}
+                                  className="text-xs bg-orange-700 hover:bg-orange-600 px-2 py-1 rounded transition">
+                                  🔄 Reopen
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); moveTask(t.id, 'archived'); }}
+                                  className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">
+                                  📦 Archive
+                                </button>
+                              </>
                             )
                           ) : (
                             STATUS_COLS.filter(s => s !== t.status).map(s => (
