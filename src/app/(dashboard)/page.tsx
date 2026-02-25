@@ -22,6 +22,7 @@ export default function TasksPage() {
   const [newPriority, setNewPriority] = useState('medium');
   const [newProject, setNewProject] = useState('');
   const [newInstruction, setNewInstruction] = useState('');
+  const [newAssignee, setNewAssignee] = useState('m8ke');
   const [groupBy, setGroupBy] = useState<'status' | 'project'>('status');
   const [expandedTask, setExpandedTask] = useState<number | null>(null);
   const [editingTask, setEditingTask] = useState<number | null>(null);
@@ -29,6 +30,7 @@ export default function TasksPage() {
   const [editProject, setEditProject] = useState('');
   const [editPriority, setEditPriority] = useState('');
   const [editInstruction, setEditInstruction] = useState('');
+  const [editAssignee, setEditAssignee] = useState('');
   const [reopeningTask, setReopeningTask] = useState<number | null>(null);
   const [reopenComment, setReopenComment] = useState('');
 
@@ -53,9 +55,9 @@ export default function TasksPage() {
     if (!newTitle.trim()) return;
     await fetch('/missioncontrol/api/tasks', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: newTitle, priority: newPriority, project: newProject || null, instruction: newInstruction || null }),
+      body: JSON.stringify({ title: newTitle, priority: newPriority, project: newProject || null, instruction: newInstruction || null, assignee: newAssignee }),
     });
-    setNewTitle(''); setNewProject(''); setNewInstruction(''); setShowNew(false); load();
+    setNewTitle(''); setNewProject(''); setNewInstruction(''); setNewAssignee('m8ke'); setShowNew(false); load();
   }
 
   async function moveTask(id: number, status: string) {
@@ -72,12 +74,13 @@ export default function TasksPage() {
     setEditProject(t.project || '');
     setEditPriority(t.priority || 'medium');
     setEditInstruction(t.instruction || '');
+    setEditAssignee(t.assignee || 'm8ke');
   }
 
   async function saveEdit(id: number) {
     await fetch(`/missioncontrol/api/tasks/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: editTitle, project: editProject, priority: editPriority, instruction: editInstruction }),
+      body: JSON.stringify({ title: editTitle, project: editProject, priority: editPriority, instruction: editInstruction, assignee: editAssignee }),
     });
     setEditingTask(null);
     load();
@@ -143,6 +146,11 @@ export default function TasksPage() {
               <option value="low">Low</option><option value="medium">Medium</option>
               <option value="high">High</option><option value="urgent">Urgent</option>
             </select>
+            <select value={newAssignee} onChange={e => setNewAssignee(e.target.value)}
+              className="px-3 py-2 bg-gray-800 rounded-lg border border-gray-700">
+              <option value="m8ke">🤖 M8ke</option>
+              <option value="human">👤 Human</option>
+            </select>
           </div>
           <textarea placeholder="Instruction — detailed instructions for M8ke..." value={newInstruction}
             onChange={e => setNewInstruction(e.target.value)} rows={10}
@@ -180,6 +188,14 @@ export default function TasksPage() {
                   <option value="high">High</option><option value="urgent">Urgent</option>
                 </select>
               </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Assignee</label>
+                <select value={editAssignee} onChange={e => setEditAssignee(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 rounded-lg border border-gray-700">
+                  <option value="m8ke">🤖 M8ke</option>
+                  <option value="human">👤 Human</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="text-xs text-gray-400 block mb-1">Instruction</label>
@@ -213,7 +229,7 @@ export default function TasksPage() {
                         <div className="font-medium text-sm"><span className="text-gray-500 mr-1">#{t.id}</span>{t.title}</div>
                         <div className="flex gap-2 mt-1 flex-wrap">
                           {t.project && <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">{t.project}</span>}
-                          {t.assignee && <span className="text-xs text-gray-500">@{t.assignee}</span>}
+                          {t.assignee && <span className={`text-xs ${t.assignee === 'human' ? 'text-yellow-400' : 'text-gray-500'}`}>{t.assignee === 'human' ? '👤' : '🤖'} {t.assignee}</span>}
                           <span className="text-xs text-gray-600">{STATUS_LABELS[t.status]}</span>
                         </div>
                       </div>
