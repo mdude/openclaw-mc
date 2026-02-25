@@ -67,18 +67,24 @@ export async function GET(req: Request) {
         if (!job.enabled) continue;
         if (job.schedule?.kind === 'cron' && job.schedule?.expr) {
           const occurrences = expandCron(job.schedule.expr, job.schedule.tz, start, end);
+          const now = new Date();
+          // Find the most recent past occurrence
+          const pastOccurrences = occurrences.filter(d => d < now);
+          const lastOccurrence = pastOccurrences.length > 0 ? pastOccurrences[pastOccurrences.length - 1].toISOString() : null;
+          
           for (const date of occurrences) {
+            const isLastRun = lastOccurrence && date.toISOString() === lastOccurrence;
             events.push({
               id: `cron-${job.jobId || job.id}-${date.toISOString()}`,
               title: `⏰ ${job.name || job.jobId || job.id}`,
               start_time: date.toISOString(),
               type: 'cron',
-              color: job.state?.lastStatus === 'error' ? '#ef4444' : '#8b5cf6',
+              color: (isLastRun && job.state?.lastStatus === 'error') ? '#ef4444' : '#8b5cf6',
               meta: {
                 schedule: job.schedule.expr,
                 tz: job.schedule.tz,
-                lastStatus: job.state?.lastStatus,
-                lastError: job.state?.lastError,
+                lastStatus: isLastRun ? job.state?.lastStatus : undefined,
+                lastError: isLastRun ? job.state?.lastError : undefined,
               }
             });
           }

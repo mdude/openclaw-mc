@@ -55,7 +55,7 @@ export function createTask(data: any) {
     title: data.title,
     description: data.description || null,
     instruction: data.instruction || null,
-    status: data.status || 'active',
+    status: data.status || 'backlog',
     priority: data.priority || 'medium',
     assignee: data.assignee || 'm8ke',
     project: data.project || null,

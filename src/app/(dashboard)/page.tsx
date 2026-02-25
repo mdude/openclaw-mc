@@ -141,7 +141,7 @@ export default function TasksPage() {
             </select>
           </div>
           <textarea placeholder="Instruction — detailed instructions for M8ke..." value={newInstruction}
-            onChange={e => setNewInstruction(e.target.value)} rows={4}
+            onChange={e => setNewInstruction(e.target.value)} rows={10}
             className="w-full px-3 py-2 bg-gray-800 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none resize-y text-sm" />
           <div className="flex justify-end">
             <button type="submit" className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold transition">Create</button>
