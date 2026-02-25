@@ -206,7 +206,7 @@ export default function TasksPage() {
                   <div key={t.id} className={`bg-gray-800 p-3 rounded-lg border-l-4 ${PRIORITY_COLORS[t.priority] || 'border-gray-700'} transition`}>
                     <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedTask(isExpanded ? null : t.id)}>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">{t.title}</div>
+                        <div className="font-medium text-sm"><span className="text-gray-500 mr-1">#{t.id}</span>{t.title}</div>
                         <div className="flex gap-2 mt-1 flex-wrap">
                           {t.project && <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">{t.project}</span>}
                           {t.assignee && <span className="text-xs text-gray-500">@{t.assignee}</span>}
