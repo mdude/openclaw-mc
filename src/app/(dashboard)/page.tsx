@@ -227,13 +227,29 @@ export default function TasksPage() {
                     <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedTask(isExpanded ? null : t.id)}>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm"><span className="text-gray-500 mr-1">#{t.id}</span>{t.title}</div>
-                        <div className="flex gap-2 mt-1 flex-wrap">
+                        <div className="flex gap-2 mt-1 flex-wrap items-center">
                           {t.project && <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">{t.project}</span>}
                           {t.assignee && <span className={`text-xs ${t.assignee === 'human' ? 'text-yellow-400' : 'text-gray-500'}`}>{t.assignee === 'human' ? '👤' : '🤖'} {t.assignee}</span>}
-                          <span className="text-xs text-gray-600">{STATUS_LABELS[t.status]}</span>
                         </div>
                       </div>
-                      <span className="text-gray-500 text-xs ml-2">{isExpanded ? '▲' : '▼'}</span>
+                      <div className="flex items-center gap-1 ml-2 shrink-0" onClick={e => e.stopPropagation()}>
+                        {t.status === 'done' ? (
+                          <>
+                            <button onClick={() => { setReopeningTask(t.id); setReopenComment(''); }}
+                              className="text-xs bg-orange-700 hover:bg-orange-600 px-1.5 py-0.5 rounded transition" title="Reopen">🔄</button>
+                            <button onClick={() => moveTask(t.id, 'archived')}
+                              className="text-xs bg-gray-700 hover:bg-gray-600 px-1.5 py-0.5 rounded transition" title="Archive">📦</button>
+                          </>
+                        ) : (
+                          STATUS_COLS.filter(s => s !== t.status).map(s => (
+                            <button key={s} onClick={() => moveTask(t.id, s)}
+                              className="text-xs bg-gray-700 hover:bg-gray-600 px-1.5 py-0.5 rounded transition" title={STATUS_LABELS[s]}>
+                              → {STATUS_LABELS[s]}
+                            </button>
+                          ))
+                        )}
+                        <span className="text-gray-500 text-xs ml-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? '▲' : '▼'}</span>
+                      </div>
                     </div>
 
                     {isExpanded && (
@@ -250,41 +266,21 @@ export default function TasksPage() {
                             className="text-xs bg-blue-700 hover:bg-blue-600 px-2 py-1 rounded transition">
                             ✏️ Edit
                           </button>
-                          {t.status === 'done' ? (
-                            reopeningTask === t.id ? (
-                              <div className="w-full mt-2 space-y-2" onClick={e => e.stopPropagation()}>
-                                <textarea value={reopenComment} onChange={e => setReopenComment(e.target.value)}
-                                  placeholder="Why are you reopening this? What needs to change?"
-                                  rows={2}
-                                  className="w-full px-3 py-2 bg-gray-900 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none text-xs resize-y" />
-                                <div className="flex gap-2">
-                                  <button onClick={() => { setReopeningTask(null); setReopenComment(''); }}
-                                    className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">Cancel</button>
-                                  <button onClick={() => reopenTask(t.id)}
-                                    className="text-xs bg-orange-600 hover:bg-orange-700 px-2 py-1 rounded transition font-semibold">Reopen → Active</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <button onClick={(e) => { e.stopPropagation(); setReopeningTask(t.id); setReopenComment(''); }}
-                                  className="text-xs bg-orange-700 hover:bg-orange-600 px-2 py-1 rounded transition">
-                                  🔄 Reopen
-                                </button>
-                                <button onClick={(e) => { e.stopPropagation(); moveTask(t.id, 'archived'); }}
-                                  className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">
-                                  📦 Archive
-                                </button>
-                              </>
-                            )
-                          ) : (
-                            STATUS_COLS.filter(s => s !== t.status).map(s => (
-                              <button key={s} onClick={(e) => { e.stopPropagation(); moveTask(t.id, s); }}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">
-                                → {STATUS_LABELS[s]}
-                              </button>
-                            ))
-                          )}
                         </div>
+                        {reopeningTask === t.id && (
+                          <div className="w-full mt-2 space-y-2" onClick={e => e.stopPropagation()}>
+                            <textarea value={reopenComment} onChange={e => setReopenComment(e.target.value)}
+                              placeholder="Why are you reopening this? What needs to change?"
+                              rows={2}
+                              className="w-full px-3 py-2 bg-gray-900 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none text-xs resize-y" />
+                            <div className="flex gap-2">
+                              <button onClick={() => { setReopeningTask(null); setReopenComment(''); }}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition">Cancel</button>
+                              <button onClick={() => reopenTask(t.id)}
+                                className="text-xs bg-orange-600 hover:bg-orange-700 px-2 py-1 rounded transition font-semibold">Reopen → Active</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
