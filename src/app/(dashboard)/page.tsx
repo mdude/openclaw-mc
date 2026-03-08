@@ -91,16 +91,24 @@ export default function TasksPage() {
   }
 
   async function reopenTask(id: number) {
+    const task = tasks.find(t => t.id === id);
     if (reopenComment.trim()) {
       await fetch(`/missioncontrol/api/tasks/${id}/events`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note: reopenComment }),
       });
+      // Append reopen feedback to instruction so the session sees it on re-dispatch
+      const updatedInstruction = (task?.instruction || '') + '\n\n---\n**Reopened with feedback:** ' + reopenComment;
+      await fetch(`/missioncontrol/api/tasks/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active', instruction: updatedInstruction }),
+      });
+    } else {
+      await fetch(`/missioncontrol/api/tasks/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' }),
+      });
     }
-    await fetch(`/missioncontrol/api/tasks/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'active' }),
-    });
     setReopeningTask(null);
     setReopenComment('');
     load();
