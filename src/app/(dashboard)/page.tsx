@@ -232,31 +232,31 @@ export default function TasksPage() {
                 const isExpanded = expandedTask === t.id;
                 return (
                   <div key={t.id} className={`bg-gray-800 p-3 rounded-lg border-l-4 ${PRIORITY_COLORS[t.priority] || 'border-gray-700'} transition`}>
-                    <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedTask(isExpanded ? null : t.id)}>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm"><span className="text-gray-500 mr-1">#{t.id}</span>{t.title}</div>
-                        <div className="flex gap-2 mt-1 flex-wrap items-center">
-                          {t.project && <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">{t.project}</span>}
-                          {t.assignee && <span className={`text-xs ${t.assignee === 'human' ? 'text-yellow-400' : 'text-gray-500'}`}>{t.assignee === 'human' ? '👤' : '🤖'} {t.assignee}</span>}
-                        </div>
+                    <div className="cursor-pointer" onClick={() => setExpandedTask(isExpanded ? null : t.id)}>
+                      <div className="flex items-start justify-between">
+                        <div className="font-medium text-sm flex-1 min-w-0"><span className="text-gray-500 mr-1">#{t.id}</span>{t.title}</div>
+                        <span className="text-gray-500 text-xs ml-2 shrink-0">{isExpanded ? '▲' : '▼'}</span>
                       </div>
-                      <div className="flex items-center gap-1 ml-2 shrink-0" onClick={e => e.stopPropagation()}>
+                      <div className="flex gap-1 mt-1.5 flex-nowrap overflow-x-auto" onClick={e => e.stopPropagation()}>
                         {t.status === 'done' ? (
                           <>
                             <button onClick={() => { setReopeningTask(t.id); setReopenComment(''); }}
-                              className="text-xs bg-orange-700 hover:bg-orange-600 px-1.5 py-0.5 rounded transition" title="Reopen">🔄</button>
+                              className="text-[10px] bg-orange-700 hover:bg-orange-600 px-1.5 py-0.5 rounded transition whitespace-nowrap" title="Reopen">🔄 Reopen</button>
                             <button onClick={() => moveTask(t.id, 'archived')}
-                              className="text-xs bg-gray-700 hover:bg-gray-600 px-1.5 py-0.5 rounded transition" title="Archive">📦</button>
+                              className="text-[10px] bg-gray-700 hover:bg-gray-600 px-1.5 py-0.5 rounded transition whitespace-nowrap" title="Archive">📦 Archive</button>
                           </>
                         ) : (
                           STATUS_COLS.filter(s => s !== t.status).map(s => (
                             <button key={s} onClick={() => moveTask(t.id, s)}
-                              className="text-xs bg-gray-700 hover:bg-gray-600 px-1.5 py-0.5 rounded transition" title={STATUS_LABELS[s]}>
+                              className="text-[10px] bg-gray-700 hover:bg-gray-600 px-1.5 py-0.5 rounded transition whitespace-nowrap" title={STATUS_LABELS[s]}>
                               → {STATUS_LABELS[s]}
                             </button>
                           ))
                         )}
-                        <span className="text-gray-500 text-xs ml-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); setExpandedTask(isExpanded ? null : t.id); }}>{isExpanded ? '▲' : '▼'}</span>
+                      </div>
+                      <div className="flex gap-2 mt-1 flex-wrap items-center">
+                        {t.project && <span className="text-xs bg-gray-700 px-2 py-0.5 rounded">{t.project}</span>}
+                        {t.assignee && <span className={`text-xs ${t.assignee === 'human' ? 'text-yellow-400' : 'text-gray-500'}`}>{t.assignee === 'human' ? '👤' : '🤖'} {t.assignee}</span>}
                       </div>
                     </div>
 
