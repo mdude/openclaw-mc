@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 const tabs = [
   { label: 'Tasks', href: '/', icon: '📋' },
   { label: 'Calendar', href: '/calendar', icon: '📅' },
+  { label: 'Cron Jobs', href: '/cron', icon: '⏰' },
   { label: 'Memory', href: '/memory', icon: '🧠' },
 ];
 
